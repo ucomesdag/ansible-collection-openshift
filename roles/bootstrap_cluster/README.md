@@ -1,6 +1,21 @@
-# Ansible role cluster_bootstrap
+# bootstrap_cluster
 
-An Ansible role for booting an OpenShift cluster. This role uses the agent-based installation method.
+An Ansible role to bootstrap and install an OpenShift cluster using the agent-based installation workflow.
+
+## How to use
+
+```yaml
+---
+- name: Bootstrap OpenShift Cluster
+  hosts: localhost
+  gather_facts: false
+  connection: local
+  vars_files:
+    - ./cluster_config.yaml
+
+  roles:
+    - redhat_consulting_services.openshift.bootstrap_cluster
+```
 
 ## Role Variables
 
@@ -66,11 +81,17 @@ ssh_public_key: |
 # If not provided, the first masters IP address will be used as the rendezvous server.
 rendezvous_ip: 172.16.11.20
 
-# api_vip is the virtual IP address pointing to the cluster's API load balancer.
+# In dual-stack clusters, provide both the IPv4 and IPv6 VIPs as a list, for example:
+# api_vip:
+#   - "192.168.10.2"
+#   - "2001:db8::2"
 api_vip: ""
 
-# ingress_vip is the virtual IP address pointing to the cluster's ingress load balancer.
-# It is used to access the cluster's ingress. Therefore, it is required to be set
+# It is used to access the cluster's ingress. Therefore, it is required to be set.
+# In dual-stack clusters, provide both the IPv4 and IPv6 VIPs as a list, for example:
+# ingress_vip:
+#   - "192.168.10.3"
+#   - "2001:db8::3"
 ingress_vip: ""
 
 # enable_fips is a boolean variable that specifies whether FIPS mode should be enabled for the cluster.
@@ -133,13 +154,23 @@ proxy:
 agent_config:
   # master|worker defines the configuration for either the master or worker nodes. In both cases, the configuration is the same.
   <master|worker>:
-    # hostname_prefix is the prefix for the hostnames of the nodes. It is used to generate the hostnames using the prefix and the node id.
-    # If the hosts[].hostname variable is set, this prefix is ignored and the hostname is used instead.
-    # Example: If the hostname_prefix is `master-` and the node id is `0`, the generated hostname is `master-0`.
-    hostname_prefix: "master-"
     # root_device_name is the name of the root device for the nodes.
     # This option only applies if `hosts[].root_device.name`, `hosts[].root_device.serial_number`, `hosts[].root_device.wwn` are not set.
     root_device_name: "/dev/sda"
+    # dns_resolvers defines DNS servers for the nodes. IPv4 and IPv6 addresses are supported.
+    dns_resolvers:
+      - 172.16.11.1
+      - 2001:db8::1
+    # routes defines static routes for the nodes. IPv4 and IPv6 destinations and gateways are supported.
+    routes:
+      - destination: 0.0.0.0/0
+        gateway: 172.16.11.1
+        interface: bond0.100
+        table_id: 254
+      - destination: "::/0"
+        gateway: 2001:db8::1
+        interface: bond0.100
+        table_id: 254
     # bonds defines the bonding configuration for the nodes.
     bonds:
       -
@@ -179,6 +210,8 @@ agent_config:
       # master / worker: 0
       -
         # hostname explicitly defines the hostname of the host.
+        # The value defined here will be concatenated with the cluster name and base domain name to form the fully qualified domain name (FQDN) of the host.
+        # Example: if the cluster name is "mycluster" and the base domain is "example.com", the FQDN for this host will be "master-0.mycluster.example.com"
         hostname: "master-0"
         # root_device defines the root device RHCOS will be installed on.
         root_device:
@@ -199,7 +232,8 @@ agent_config:
             part_of_bond: "bond0"
             # mtu (optional) is the MTU of the interface. If not set, the default MTU of the hardware will be used.
             mtu: 1500
-            # addresses (optional) defines the IP addresses for the interface.
+            # addresses (optional) defines static IP addresses for the interface.
+            # IPv4 and IPv6 addresses can be mixed in the same list; each address is applied to the matching stack.
             # This section should only be used if bonds, bridges or vlans are not used.
             # If bonds, bridges or vlans are used, the IP addresses must be defined in the respective section.
             addresses:
@@ -208,32 +242,51 @@ agent_config:
                 ip: 192.168.10.222
                 # subnet_length is the subnet length for the interface.
                 subnet_length: 24
+              -
+                ip: 2001:db8::10
+                subnet_length: 64
+            # ipv4_dhcp (optional) enables DHCP for IPv4 when no static IPv4 addresses are defined.
+            ipv4_dhcp: false
+            # ipv6_dhcp (optional) enables DHCP for IPv6 when no static IPv6 addresses are defined.
+            ipv6_dhcp: false
         # bonds defines the host specific bond configuration.
         bonds:
           -
             # interface is the name of the bond interface to which an IP address should be assigned.
             # This interface must match the name of the bond interface defined in `bonds[].name`.
             interface: bond0
-            # addresses defines the IP addresses for the interface.
+            # addresses defines static IP addresses for the interface.
+            # IPv4 and IPv6 addresses can be mixed in the same list.
             addresses:
               -
-                # ip is the IPv4 or IPv6 address to assign to the interface.
                 ip: 192.168.10.222
-                # subnet_length is the subnet length for the interface.
                 subnet_length: 24
+              -
+                ip: 2001:db8::10
+                subnet_length: 64
+            # ipv4_dhcp (optional) enables DHCP for IPv4 when no static IPv4 addresses are defined.
+            ipv4_dhcp: false
+            # ipv6_dhcp (optional) enables DHCP for IPv6 when no static IPv6 addresses are defined.
+            ipv6_dhcp: false
         # vlans defines the host specific bond configuration.
         vlans:
           -
             # interface is the name of the bond interface to which an IP address should be assigned.
             # This interface must match the name of the bond interface defined in `vlans[].name`.
             interface: bond0.100
-            # addresses defines the IP addresses for the interface.
+            # addresses defines static IP addresses for the interface.
+            # IPv4 and IPv6 addresses can be mixed in the same list.
             addresses:
               -
-                # ip is the IPv4 or IPv6 address to assign to the interface.
                 ip: 192.168.10.222
-                # subnet_length is the subnet length for the interface.
                 subnet_length: 24
+              -
+                ip: 2001:db8::10
+                subnet_length: 64
+            # ipv4_dhcp (optional) enables DHCP for IPv4 when no static IPv4 addresses are defined.
+            ipv4_dhcp: false
+            # ipv6_dhcp (optional) enables DHCP for IPv6 when no static IPv6 addresses are defined.
+            ipv6_dhcp: false
 ```
 
 ## Role facts
