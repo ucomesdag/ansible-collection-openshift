@@ -61,7 +61,11 @@ jobs:
 
       - name: Execute version extraction script
         run: |
-          python3 ./scripts/versions-extract.py ${{ env.VERSION_MATRIX_FILE }} --minor 5 --patch 5
+          python3 ./scripts/versions-extract.py ${{ env.VERSION_MATRIX_FILE }} \
+            --path /pub/openshift-v4/clients/ocp/ \
+            --path /pub/openshift-v5/clients/ocp/ \
+            --version-policy 4:5:5 \
+            --version-policy 5:5:5
 
       - name: Check if changes were made
         id: git-check
