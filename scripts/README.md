@@ -4,19 +4,19 @@ This directory contains utility scripts for managing and processing actions rela
 
 ## versions-extract.py
 
-This script extracts the latest OpenShift versions from a specified URL and updates a YAML file with this information. It allows customization of the number of major/minor and patch versions to extract.
+This script extracts the latest OpenShift versions from a specified URL and updates a JSON file with this information. It allows customization of the number of major/minor and patch versions to extract.
 
 Arguments:
 
-- `file_path`: The path to the YAML file to update.
-- `--url`: (Optional) The URL to process for version extraction (default is `mirror.openshift.com`).`
-- `--minor`: (Optional) The number of minor versions to extract (default is 3).
-- `--patch`: (Optional) The number of patch versions to extract (default is 5).
+- `file_path`: The path to the JSON file to update.
+- `--url`: (Optional) The URL to process for version extraction (default is `mirror.openshift.com`).
+- `--path`: (Optional) The mirror path to process; may be specified multiple times (default is `/pub/openshift-v4/clients/ocp/`).
+- `--version-policy`: (Optional) The version selection policy in `MAJOR:MINOR_COUNT:PATCH_COUNT` format; may be specified multiple times. If omitted, the 3 latest major/minor versions are selected, with up to 5 patches for each.
 
 Example usage:
 
 ```bash
-python3 versions-extract.py .github/workflows/build-ee.yaml
+python3 versions-extract.py .github/openshift-versions.json
 ```
 
 ### Execution
