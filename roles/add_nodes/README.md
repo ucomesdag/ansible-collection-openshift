@@ -45,6 +45,11 @@ generate_iso: true
 base_dir: /iso
 # pull_secret is the pull secret used to access the OpenShift container images. It is required to generate the ISO image if `generate_iso` is set to true.
 pull_secret: ""
+# The following parameter can optionally be enabled to allow the cluster to use link-local IPv6 addresses for BGP peering only.
+# This still works, even if the cluster is not completely dual-stack.
+# It is not meant to be used for general IPv6 connectivity. If you want to use link-local IPv6 addresses for BGP peering only, set this parameter to true.
+# The default is false to preserve backwards compatibility for existing deployments
+link_local_ipv6: false
 # worker defines the configuration for the worker nodes in the OpenShift cluster. It is used to configure the worker nodes, including their hostnames, root devices, network interfaces, and VLANs.
 worker:
   # root_device_name is the name of the root device for the worker nodes. It is used to configure the root device for the worker nodes. This option only applies if `agent_config.worker.hosts[].root_device.name`, `agent_config.worker.hosts[].root_device.serial_number`, `agent_config.worker.hosts[].root_device.wwn` are not set.
@@ -71,6 +76,8 @@ worker:
       # mode is the bonding mode. It is used to configure the bonding mode for the worker nodes.
       # Available modes: balance-rr, active-backup, balance-xor, broadcast, 802.3ad, balance-tlb, balance-alb
       mode: "802.3ad"
+      # mtu (optional) is the MTU of the bond interface. If not set, the default MTU will be used.
+      mtu: 9000
       # options defines the bonding options. It is used to configure the bonding options for the worker nodes. Any options can be set here as a key-value pair.
       options:
         miimon: "100"
@@ -83,6 +90,8 @@ worker:
       # type is the type of the bridge interface. It is used to configure the bridge interface for the worker nodes.
       # Available types: ovs-bridge, linux-bridge
       type: ovs-bridge
+      # mtu (optional) is the MTU of the bridge interface. If not set, the default MTU will be used.
+      mtu: 9000
       # interfaces defines the interfaces that are part of the bridge. It is used to configure the interfaces for the bridge.
       interfaces:
         -
@@ -97,6 +106,8 @@ worker:
       id: 100
       # base_interface is the base interface for the VLAN. It is used to configure the base interface for the VLAN.
       base_interface: bond0
+      # mtu (optional) is the MTU of the VLAN interface. If not set, the default MTU will be used.
+      mtu: 9000
       # addresses defines the IP addresses for the VLAN interface. It is used to configure the IP addresses for the VLAN interface.
       addresses:
         -

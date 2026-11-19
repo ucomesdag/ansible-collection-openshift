@@ -25,12 +25,17 @@
 
 {% macro render_ipv6_block(addresses, dhcp) %}
           ipv6:
+{% if link_local_ipv6 %}
+            enabled: true
+{% endif %}
 {% set ipv6_ns = namespace(found=false) %}
 {% for address in addresses | default([]) %}
 {% if ':' in (address.ip | string) %}
 {% if not ipv6_ns.found %}
 {% set ipv6_ns.found = true %}
+{% if not link_local_ipv6 %}
             enabled: true
+{% endif %}
             dhcp: false
             autoconf: false
             address:
@@ -41,9 +46,11 @@
 {% endfor %}
 {% if not ipv6_ns.found %}
 {% if dhcp | default(false) %}
+{% if not link_local_ipv6 %}
             enabled: true
+{% endif %}            
             dhcp: true
-{% else %}
+{% elif not link_local_ipv6 %}
             enabled: false
 {% endif %}
 {% endif %}
@@ -131,6 +138,9 @@ hosts:
         - name: {{ bond.name }}
           type: bond
           state: up
+{% if bond.mtu is defined %}
+          mtu: {{ bond.mtu }}
+{% endif %}
           link-aggregation:
             mode: {{ bond.mode }}
             port:
@@ -174,6 +184,9 @@ hosts:
         - name: {{ bridge.name }}
           state: up
           type: {{ bridge.type }}
+{% if bridge.mtu is defined %}
+          mtu: {{ bridge.mtu }}
+{% endif %}
           port:
 {% for interface in bridge.interfaces %}
             - name: {{ interface.name }}
@@ -194,6 +207,9 @@ hosts:
         - name: {{ vlan.name }}
           type: vlan
           state: up
+{% if vlan.mtu is defined %}
+          mtu: {{ vlan.mtu }}
+{% endif %}
           vlan:
             base-iface: {{ vlan.base_interface }}
             id: {{ vlan.id }}
