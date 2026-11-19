@@ -3,12 +3,6 @@
   ansible.builtin.set_fact:
     trusted_nodes_config: "{{ lookup('file', base_dir + '/manifests/nodes-config.yaml') | from_yaml }}"
 
-- debug:
-    var: bootfile_path
-
-- debug:
-    var: test_expectations.facts.iso_location
-
 - name: Verify role facts
   when: test_expectations.facts is defined
   ansible.builtin.assert:
